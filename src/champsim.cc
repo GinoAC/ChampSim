@@ -36,17 +36,24 @@ struct phase_info {
 };
 
 int champsim_main(std::vector<std::reference_wrapper<O3_CPU>>& ooo_cpu, std::vector<std::reference_wrapper<champsim::operable>>& operables,
-                  std::vector<champsim::phase_info>& phases, bool knob_cloudsuite, std::vector<std::string> trace_names)
+                  std::vector<champsim::phase_info>& phases, bool knob_cloudsuite, std::vector<std::string> trace_names, bool trace_generated)
 {
   for (champsim::operable& op : operables)
     op.initialize();
 
   std::vector<std::unique_ptr<tracereader>> traces;
-  for (auto name : trace_names)
-    traces.push_back(get_tracereader(name, traces.size(), knob_cloudsuite));
+
+  //If generating traces, use a different tracereader initializer
+  if(trace_generated){
+    printf("Will generate traces...\n");
+    exit(0);
+  }else{
+    for (auto name : trace_names)
+      traces.push_back(get_tracereader(name, traces.size(), knob_cloudsuite));
+  }
 
   // simulation entry point
-  for (auto [phase_name, is_warmup, length, ignored] : phases) {
+  for (auto [phase_name, is_warmup, length, ignored, generated] : phases) {
     // Initialize phase
     for (champsim::operable& op : operables) {
       op.warmup = is_warmup;

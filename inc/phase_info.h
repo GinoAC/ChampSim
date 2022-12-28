@@ -16,6 +16,7 @@ struct phase_info {
   bool is_warmup;
   uint64_t length;
   std::vector<std::string> trace_names;
+  bool trace_generated;
 };
 
 } // namespace champsim

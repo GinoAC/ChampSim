@@ -8,7 +8,8 @@
     "trace_generator": 
     {
             "seed": 4114110,
-            "percent_memory": 20
+            "percent_memory": 20,
+            "percent_loads": 80
     },
 
     "ooo_cpu": [

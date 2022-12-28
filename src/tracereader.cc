@@ -1,4 +1,5 @@
 #include "tracereader.h"
+#include "trace_gen.h"
 
 #include <algorithm>
 #include <cstring>
