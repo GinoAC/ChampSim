@@ -13,7 +13,7 @@ vmem_fmtstr = 'VirtualMemory vmem({pte_page_size}, {num_levels}, {minor_fault_pe
 cache_fmtstr = 'CACHE {name}{{"{name}", {frequency}, {sets}, {ways}, {mshr_size}, {fill_latency}, {max_tag_check}, {max_fill}, {_offset_bits}, {prefetch_as_load:b}, {wq_check_full_addr:b}, {virtual_prefetch:b}, {prefetch_activate_mask}, {name}_queues, &{lower_level}, {pref_enum_string}, {repl_enum_string}}};'
 queue_fmtstr = 'CACHE::{_type} {name}_queues{{{frequency}, {rq_size}, {pq_size}, {wq_size}, {ptwq_size}, {hit_latency}, {_offset_bits}, {wq_check_full_addr:b}}};'
 
-def get_instantiation_lines(cores, caches, ptws, pmem, vmem):
+def get_instantiation_lines(cores, caches, ptws, pmem, vmem, trace_generator):
     memory_system = {c['name']:c for c in itertools.chain(caches, ptws)}
 
     # Give each element a fill level

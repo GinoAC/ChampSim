@@ -5,6 +5,12 @@
     "heartbeat_frequency": 10000000,
     "num_cores": 1,
 
+    "trace_generator": 
+    {
+            "seed": 4114110,
+            "percent_memory": 20
+    },
+
     "ooo_cpu": [
         {
             "frequency": 4000,

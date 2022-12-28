@@ -8,10 +8,12 @@ import json
 from . import makefile
 from . import instantiation_file
 from . import constants_file
+from . import trace_generator_file
 from . import modules
 from . import util
 
 constants_file_name = 'champsim_constants.h'
+trace_generator_file_name = 'trace_gen.h'
 instantiation_file_name = 'core_inst.inc'
 core_modules_file_name = 'ooo_cpu_modules.inc'
 cache_modules_file_name = 'cache_modules.inc'
@@ -46,6 +48,7 @@ def get_files(executable, elements, module_info, config_file, env, bindir_name, 
     yield os.path.join(inc_dir, cache_modules_file_name), modules.get_repl_lines(module_info['repl']) # Cache modules file
     yield os.path.join(inc_dir, cache_modules_file_name), modules.get_pref_lines(module_info['pref'])
     yield os.path.join(inc_dir, constants_file_name), constants_file.get_constants_file(config_file, elements['pmem']) # Constants header
+    yield os.path.join(inc_dir, trace_generator_file_name), trace_generator_file.get_trace_generator_file(config_file, elements["trace_generator"]) # Constants header
 
     joined_module_info = util.chain(*module_info.values()) # remove module type tag
     yield from ((os.path.join(inc_dir, m['name'] + '.inc'), get_map_lines(m['func_map'])) for m in joined_module_info.values())
