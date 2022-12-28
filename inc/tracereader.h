@@ -19,7 +19,8 @@ class tracereader
 {
 public:
   const std::string trace_string;
-  tracereader(uint8_t cpu_idx, std::string _ts) : trace_string(_ts), cpu(cpu_idx) {}
+  tracereader(uint8_t cpu_idx, std::string _ts) : trace_string(_ts), cpu(cpu_idx) {printf("Define base reader\n");}
+  tracereader(){}
   virtual ~tracereader() = default;
 
   virtual ooo_model_instr operator()() = 0;
@@ -47,4 +48,29 @@ protected:
   ooo_model_instr impl_get();
 };
 
-std::unique_ptr<tracereader> get_tracereader(std::string fname, uint8_t cpu, bool is_cloudsuite);
+class tracegenerator : public tracereader
+{
+public: 
+  tracegenerator(uint8_t cpu_idx) : cpu(cpu_idx){ printf("Define trace gen\n"); printf("fp %ld\n", fp == NULL);}
+  ~tracegenerator() = default;
+  
+  template <typename T>
+  void refresh_buffer();
+protected:
+  uint8_t cpu;
+
+  constexpr static std::size_t buffer_size = 128;
+  constexpr static std::size_t refresh_thresh = 1;
+  std::deque<ooo_model_instr> instr_buffer;
+
+  template <typename T>
+  ooo_model_instr impl_get();
+ 
+  template <typename T>
+  ooo_model_instr operator()(){return impl_get<T>(); }
+  bool eof(){return false;};
+
+  input_instr generate_instr();
+}; 
+
+std::unique_ptr<tracereader> get_tracereader(std::string fname, uint8_t cpu, bool is_cloudsuite, bool is_generated);
