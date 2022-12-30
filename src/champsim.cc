@@ -45,7 +45,6 @@ int champsim_main(std::vector<std::reference_wrapper<O3_CPU>>& ooo_cpu, std::vec
 
   //If generating traces, use a different tracereader initializer
   if(trace_generated){
-    printf("Will generate traces...\n");
     traces.push_back(get_tracereader("", 1, knob_cloudsuite, trace_generated));
   }else{
     for (auto name : trace_names)
@@ -81,12 +80,10 @@ int champsim_main(std::vector<std::reference_wrapper<O3_CPU>>& ooo_cpu, std::vec
       }
       std::sort(std::begin(operables), std::end(operables), champsim::by_next_operate());
 
-      printf("Should read from trace\n");
       // Read from trace
       for (O3_CPU& cpu : ooo_cpu) {
         while (std::size(cpu.input_queue) < cpu.IN_QUEUE_SIZE) {
           cpu.input_queue.push_back((*traces[cpu.cpu])());
-          printf("Gen traces\n");
           // Reopen trace if we've reached the end of the file
           if (traces[cpu.cpu]->eof()) {
             auto name = traces[cpu.cpu]->trace_string;
@@ -95,7 +92,6 @@ int champsim_main(std::vector<std::reference_wrapper<O3_CPU>>& ooo_cpu, std::vec
           }
         }
       }
-      printf("Successfully read from trace\n");
 
       // Check for phase finish
       auto [elapsed_hour, elapsed_minute, elapsed_second] = elapsed_time();
@@ -122,6 +118,5 @@ int champsim_main(std::vector<std::reference_wrapper<O3_CPU>>& ooo_cpu, std::vec
       std::cout << std::endl;
     }
   }
-
   return 0;
 }

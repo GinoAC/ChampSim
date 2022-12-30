@@ -9,7 +9,10 @@
     {
             "seed": 4114110,
             "percent_memory": 20,
-            "percent_loads": 80
+            "percent_loads": 80,
+            "sequential_ip_increment": 4,
+            "average_basic_block": 8,
+            "unique_instructions": 8000
     },
 
     "ooo_cpu": [

@@ -13,7 +13,7 @@ from . import modules
 from . import util
 
 constants_file_name = 'champsim_constants.h'
-trace_generator_file_name = 'trace_gen.h'
+trace_generator_file_name = 'trace_gen_constants.h'
 instantiation_file_name = 'core_inst.inc'
 core_modules_file_name = 'ooo_cpu_modules.inc'
 cache_modules_file_name = 'cache_modules.inc'

@@ -1,5 +1,5 @@
 #include "tracereader.h"
-#include "trace_gen.h"
+#include "trace_gen_constants.h"
 
 #include <algorithm>
 #include <cstring>
@@ -90,13 +90,11 @@ ooo_model_instr tracereader::impl_get()
 template <typename T>
 ooo_model_instr tracegenerator::impl_get()
 {
-  printf("HERE TG\n");
   if (std::size(instr_buffer) <= refresh_thresh)
     refresh_buffer<T>();
 
   auto retval = instr_buffer.front();
   instr_buffer.pop_front();
-  printf("Ret val %ld\n", retval.ip);
   return retval;
 }
 
@@ -121,7 +119,7 @@ std::unique_ptr<tracereader> get_tracereader(std::string fname, uint8_t cpu, boo
   if (is_cloudsuite){
     return std::make_unique<bulk_tracereader<cloudsuite_instr>>(cpu, fname);
   }else if (is_generated){
-    printf("Making trace generator...\n");
+    printf("Initializing trace generator...\n");
     return std::make_unique<bulk_tracegenerator<input_instr>>(cpu);
   }else{
     return std::make_unique<bulk_tracereader<input_instr>>(cpu, fname);
@@ -130,19 +128,3 @@ std::unique_ptr<tracereader> get_tracereader(std::string fname, uint8_t cpu, boo
 
 bool tracereader::eof() const { return eof_ && std::size(instr_buffer) <= refresh_thresh; }
 
-input_instr tracegenerator::generate_instr(){
-  input_instr instr;
-  instr.ip = 1;
-  instr.is_branch = 0;
-  instr.branch_taken = 0;
-  for(int a = 0; a < NUM_INSTR_DESTINATIONS; a++){
-    instr.destination_registers[a] = (a%2) == 0 ? a + 1 : a;
-    instr.destination_memory[a] = (a%2) == 0 ? a + 1 : a;
-  }
-
-  for(int a = 0; a < NUM_INSTR_DESTINATIONS; a++){
-    instr.destination_registers[a] = (a%2) == 0 ? a : a + 1;
-    instr.destination_memory[a] = (a%2) == 0 ? a : a + 1;
-  }
-  return instr;
-}
