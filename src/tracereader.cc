@@ -1,3 +1,19 @@
+/*
+ *    Copyright 2023 The ChampSim Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "tracereader.h"
 #include "trace_gen_constants.h"
 
@@ -9,6 +25,7 @@
 #include <iostream>
 #endif
 
+uint64_t tracereader::instr_unique_id = 0;
 void detail::pclose_file(FILE* f) { pclose(f); }
 
 FILE* tracereader::get_fptr(std::string fname)
@@ -59,7 +76,7 @@ void tracereader::refresh_buffer()
 
   // Set branch targets
   for (auto it = std::next(std::begin(instr_buffer)); it != std::end(instr_buffer); ++it)
-    std::prev(it)->branch_target = it->ip;
+    std::prev(it)->branch_target = (std::prev(it)->is_branch && std::prev(it)->branch_taken) ? it->ip : 0;
 }
 
 template <typename T>
@@ -84,6 +101,8 @@ ooo_model_instr tracereader::impl_get()
 
   auto retval = instr_buffer.front();
   instr_buffer.pop_front();
+  
+  retval.instr_id = instr_unique_id++;
   return retval;
 }
 
@@ -95,6 +114,8 @@ ooo_model_instr tracegenerator::impl_get()
 
   auto retval = instr_buffer.front();
   instr_buffer.pop_front();
+
+  retval.instr_id = instr_unique_id++;
   return retval;
 }
 

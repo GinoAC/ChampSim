@@ -26,10 +26,8 @@ SCENARIO("Prefetch metadata from an issued prefetch is seen in the lower level")
     std::array<champsim::operable*, 5> elements{{&mock_ll, &lower_queues, &upper_queues, &lower, &upper}};
 
     // Initialize the prefetching and replacement
-    upper.impl_prefetcher_initialize();
-    lower.impl_prefetcher_initialize();
-    upper.impl_replacement_initialize();
-    lower.impl_replacement_initialize();
+    upper.initialize();
+    lower.initialize();
 
     // Turn off warmup
     for (auto elem : elements) {
@@ -38,6 +36,8 @@ SCENARIO("Prefetch metadata from an issued prefetch is seen in the lower level")
     }
 
     WHEN("The upper level issues a prefetch with metadata") {
+      test::metadata_operate_collector.insert_or_assign(&upper, std::vector<uint32_t>{});
+
       // Request a prefetch
       constexpr uint64_t seed_addr = 0xdeadbeef;
       constexpr uint32_t seed_metadata = 0xcafebabe;
@@ -50,8 +50,8 @@ SCENARIO("Prefetch metadata from an issued prefetch is seen in the lower level")
           elem->_operate();
 
       THEN("The lower level sees the metadata in prefetcher_cache_operate()") {
-        REQUIRE(std::size(test::metadata_operate_collector[&lower]) == 1);
-        REQUIRE(test::metadata_operate_collector[&lower].front() == seed_metadata);
+        REQUIRE(std::size(test::metadata_operate_collector.at(&lower)) == 1);
+        REQUIRE(test::metadata_operate_collector.at(&lower).front() == seed_metadata);
       }
     }
   }
@@ -71,10 +71,8 @@ SCENARIO("Prefetch metadata from an filled block is seen in the upper level") {
     std::array<champsim::operable*, 6> elements{{&mock_ll, &lower_queues, &upper_queues, &lower, &upper, &mock_ul}};
 
     // Initialize the prefetching and replacement
-    upper.impl_prefetcher_initialize();
-    lower.impl_prefetcher_initialize();
-    upper.impl_replacement_initialize();
-    lower.impl_replacement_initialize();
+    upper.initialize();
+    lower.initialize();
 
     // Turn off warmup
     for (auto elem : elements) {
@@ -86,7 +84,8 @@ SCENARIO("Prefetch metadata from an filled block is seen in the upper level") {
       constexpr uint64_t seed_addr = 0xdeadbeef;
       constexpr uint32_t seed_metadata = 0xcafebabe;
 
-      test::metadata_fill_emitter[&lower] = seed_metadata;
+      test::metadata_fill_emitter.insert_or_assign(&lower, seed_metadata);
+      test::metadata_fill_collector.insert_or_assign(&upper, std::vector<uint32_t>{});
 
       PACKET seed;
       seed.address = seed_addr;
@@ -100,8 +99,8 @@ SCENARIO("Prefetch metadata from an filled block is seen in the upper level") {
           elem->_operate();
 
       THEN("The upper level sees the metadata in prefetcher_cache_operate()") {
-        //REQUIRE(std::size(test::metadata_collector[&upper]) == 1);
-        REQUIRE(std::count(std::begin(test::metadata_fill_collector[&upper]), std::end(test::metadata_fill_collector[&upper]), seed_metadata) == 1);
+        //REQUIRE(std::size(test::metadata_collector.at(&upper)) == 1);
+        REQUIRE(std::count(std::begin(test::metadata_fill_collector.at(&upper)), std::end(test::metadata_fill_collector.at(&upper)), seed_metadata) == 1);
       }
     }
   }

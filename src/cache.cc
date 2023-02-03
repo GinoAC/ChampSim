@@ -1,3 +1,19 @@
+/*
+ *    Copyright 2023 The ChampSim Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "cache.h"
 
 #include <algorithm>
@@ -18,8 +34,8 @@ bool CACHE::handle_fill(const PACKET& fill_mshr)
   auto [set_begin, set_end] = get_set_span(fill_mshr.address);
   auto way = std::find_if_not(set_begin, set_end, [](auto x) { return x.valid; });
   if (way == set_end)
-    way = std::next(set_begin, impl_replacement_find_victim(fill_mshr.cpu, fill_mshr.instr_id, get_set_index(fill_mshr.address), &*set_begin, fill_mshr.ip,
-                                                            fill_mshr.address, fill_mshr.type));
+    way = std::next(set_begin, impl_find_victim(fill_mshr.cpu, fill_mshr.instr_id, get_set_index(fill_mshr.address), &*set_begin, fill_mshr.ip,
+                                                fill_mshr.address, fill_mshr.type));
   assert(set_begin <= way);
   assert(way <= set_end);
   const auto way_idx = static_cast<std::size_t>(std::distance(set_begin, way)); // cast protected by earlier assertion
@@ -72,7 +88,7 @@ bool CACHE::handle_fill(const PACKET& fill_mshr)
 
       metadata_thru =
           impl_prefetcher_cache_fill(pkt_address, get_set_index(fill_mshr.address), way_idx, fill_mshr.type == PREFETCH, evicting_address, metadata_thru);
-      impl_replacement_update_state(fill_mshr.cpu, get_set_index(fill_mshr.address), way_idx, fill_mshr.address, fill_mshr.ip, evicting_address, fill_mshr.type,
+      impl_update_replacement_state(fill_mshr.cpu, get_set_index(fill_mshr.address), way_idx, fill_mshr.address, fill_mshr.ip, evicting_address, fill_mshr.type,
                                     false);
 
       way->pf_metadata = metadata_thru;
@@ -82,7 +98,7 @@ bool CACHE::handle_fill(const PACKET& fill_mshr)
     assert(fill_mshr.type != WRITE);
 
     metadata_thru = impl_prefetcher_cache_fill(pkt_address, get_set_index(fill_mshr.address), way_idx, fill_mshr.type == PREFETCH, 0, metadata_thru);
-    impl_replacement_update_state(fill_mshr.cpu, get_set_index(fill_mshr.address), way_idx, fill_mshr.address, fill_mshr.ip, 0, fill_mshr.type, false);
+    impl_update_replacement_state(fill_mshr.cpu, get_set_index(fill_mshr.address), way_idx, fill_mshr.address, fill_mshr.ip, 0, fill_mshr.type, false);
   }
 
   if (success) {
@@ -130,7 +146,7 @@ bool CACHE::try_hit(const PACKET& handle_pkt)
 
     // update replacement policy
     const auto way_idx = static_cast<std::size_t>(std::distance(set_begin, way)); // cast protected by earlier assertion
-    impl_replacement_update_state(handle_pkt.cpu, get_set_index(handle_pkt.address), way_idx, way->address, handle_pkt.ip, 0, handle_pkt.type, true);
+    impl_update_replacement_state(handle_pkt.cpu, get_set_index(handle_pkt.address), way_idx, way->address, handle_pkt.ip, 0, handle_pkt.type, true);
 
     auto copy{handle_pkt};
     copy.data = way->data;
@@ -141,7 +157,7 @@ bool CACHE::try_hit(const PACKET& handle_pkt)
     way->dirty = (handle_pkt.type == WRITE);
 
     // update prefetch stats and reset prefetch bit
-    if (way->prefetch) {
+    if (way->prefetch && !handle_pkt.prefetch_from_this) {
       sim_stats.back().pf_useful++;
       way->prefetch = false;
     }
@@ -472,7 +488,7 @@ std::size_t CACHE::get_size(uint8_t queue_type, uint64_t)
 void CACHE::initialize()
 {
   impl_prefetcher_initialize();
-  impl_replacement_initialize();
+  impl_initialize_replacement();
 }
 
 void CACHE::begin_phase()

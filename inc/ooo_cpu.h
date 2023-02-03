@@ -1,3 +1,19 @@
+/*
+ *    Copyright 2023 The ChampSim Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef OOO_CPU_H
 #define OOO_CPU_H
 
@@ -75,9 +91,7 @@ public:
   uint64_t next_print_instruction = STAT_PRINTING_PERIOD;
 
   // instruction
-  uint64_t instr_unique_id = 0;
   uint64_t instrs_to_read_this_cycle = 0;
-  uint64_t instrs_to_fetch_this_cycle = 0;
   uint64_t num_retired = 0;
 
   bool show_heartbeat = true;
@@ -143,6 +157,7 @@ public:
   void retire_rob();
 
   void do_init_instruction(ooo_model_instr& instr);
+  void do_predict_branch(ooo_model_instr& instr);
   void do_check_dib(ooo_model_instr& instr);
   bool do_fetch_instruction(std::deque<ooo_model_instr>::iterator begin, std::deque<ooo_model_instr>::iterator end);
   void do_dib_update(const ooo_model_instr& instr);
