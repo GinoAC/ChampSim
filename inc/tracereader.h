@@ -119,7 +119,5 @@ protected:
 }; 
 
 std::unique_ptr<tracereader> get_tracereader(std::string fname, uint8_t cpu, bool is_cloudsuite, bool is_generated);
-=======
-std::unique_ptr<tracereader> get_tracereader(std::string fname, uint8_t cpu, bool is_cloudsuite);
 
 #endif
