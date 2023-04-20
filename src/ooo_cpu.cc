@@ -38,8 +38,14 @@ void O3_CPU::operate()
   operate_lsq();                   // execute memory transactions
 
   dispatch_instruction(); // dispatch
+
+  #ifndef FETCH_DECODES
   decode_instruction();   // decode
   promote_to_decode();
+  #else  
+  dispatch_ii_fetch(); //Dispatch in order from ifetch buffer
+  bypass_to_decode();  //Decode pulls directly from ifetch buffer
+  #endif
 
   fetch_instruction(); // fetch
   check_dib();
@@ -255,6 +261,8 @@ bool O3_CPU::do_fetch_instruction(std::deque<ooo_model_instr>::iterator begin, s
   fetch_packet.ip = begin->ip;
   fetch_packet.instr_depend_on_me = {begin, end};
 
+  fetch_packet.is_instr = true;
+ 
   if constexpr (champsim::debug_print) {
     std::cout << "[IFETCH] " << __func__ << " instr_id: " << begin->instr_id << std::hex;
     std::cout << " ip: " << begin->ip << std::dec << " dependents: " << std::size(fetch_packet.instr_depend_on_me);
@@ -262,6 +270,57 @@ bool O3_CPU::do_fetch_instruction(std::deque<ooo_model_instr>::iterator begin, s
   }
 
   return L1I_bus.issue_read(fetch_packet);
+}
+
+void O3_CPU::dispatch_ii_fetch(){
+  auto available_decode_bandwidth = std::min<long>(DECODE_WIDTH, DISPATCH_BUFFER_SIZE - std::size(DISPATCH_BUFFER));
+  auto [window_begin, window_end] = champsim::get_span_p(std::begin(IFETCH_BUFFER), std::end(IFETCH_BUFFER), available_decode_bandwidth,
+      [cycle = current_cycle](const auto& x) { return x.event_cycle <= cycle && x.decoded == COMPLETED; });
+  std::for_each(window_begin, window_end, [&, this](auto& ib){
+    ib.event_cycle = this->current_cycle + (this->warmup ? 0 : this->DISPATCH_LATENCY);
+  });
+
+  std::move(window_begin, window_end, std::back_inserter(DISPATCH_BUFFER));
+  IFETCH_BUFFER.erase(window_begin, window_end);
+
+}
+
+void O3_CPU::bypass_to_decode(){
+
+  auto available_fetch_bandwidth = std::min<long>(FETCH_WIDTH, DECODE_BUFFER_SIZE - std::size(DECODE_BUFFER));
+
+  //printf("AFB > DBS %d, AFB %d SIZE %ld\n", (available_fetch_bandwidth > std::size(IFETCH_BUFFER)), available_fetch_bandwidth, std::size(IFETCH_BUFFER));
+  available_fetch_bandwidth = std::min<long>(available_fetch_bandwidth, std::size(IFETCH_BUFFER));
+
+  //printf("IFB Stats %lx afb %ld DBS %ld: ", current_cycle, available_fetch_bandwidth, std::size(IFETCH_BUFFER));
+  std::for_each(IFETCH_BUFFER.begin(), IFETCH_BUFFER.begin() + available_fetch_bandwidth,
+    [&, this](auto& ib){
+      //printf("%d %lx, ", ib.fetched, ib.event_cycle);
+      if(ib.fetched == COMPLETED && ib.event_cycle <= this->current_cycle){
+        this->do_dib_update(ib);
+        //printf("Bypass decode: %lx\n", ib.ip);
+        // Resume fetch
+        if (ib.branch_mispredicted) {
+          // These branches detect the misprediction at decode
+          if ((ib.branch_type == BRANCH_DIRECT_JUMP) || (ib.branch_type == BRANCH_DIRECT_CALL)
+              || (ib.branch_type == BRANCH_CONDITIONAL && ib.branch_taken == ib.branch_prediction)) {
+            // clear the branch_mispredicted bit so we don't attempt to resume fetch again at execute
+            ib.branch_mispredicted = 0;
+            // pay misprediction penalty
+            this->fetch_resume_cycle = this->current_cycle + BRANCH_MISPREDICT_PENALTY;
+          }
+        }
+
+        // Add to dispatch
+        ib.event_cycle = this->current_cycle + (this->warmup ? 0 : this->DECODE_LATENCY);
+        ib.decoded = COMPLETED;
+      }
+    });
+
+  //printf("\n");
+  // check for deadlock
+  if (!std::empty(IFETCH_BUFFER) && (IFETCH_BUFFER.front().event_cycle + DEADLOCK_CYCLE) <= current_cycle)
+    throw champsim::deadlock{cpu};
 }
 
 void O3_CPU::promote_to_decode()
@@ -694,7 +753,10 @@ bool CacheBus::issue_read(PACKET data_packet)
   data_packet.cpu = cpu;
   data_packet.type = LOAD;
   data_packet.to_return = {this};
-
+ 
+  //if(data_packet.is_instr)
+  //  printf("Issue to L1I bus %lx\n", data_packet.v_address);
+ 
   return lower_level->add_rq(data_packet);
 }
 

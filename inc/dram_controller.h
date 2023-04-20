@@ -26,6 +26,8 @@
 #include "operable.h"
 #include "util.h"
 
+//#define ORALCLE_L1I
+
 struct dram_stats {
   std::string name{};
   uint64_t dbus_cycle_congested = 0, dbus_count_congested = 0;

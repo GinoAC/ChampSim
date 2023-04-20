@@ -24,10 +24,22 @@
 #include "instruction.h"
 #include "util.h"
 
+void CACHE::oracle_fill(PACKET& handle_pkt){
+  PACKET o_pkt = handle_pkt;
+  o_pkt.is_oracle = true;
+  bool succ = handle_fill(o_pkt);
+  printf("Oracle filling... %d Type %d %lx\n", succ, o_pkt.type, o_pkt.address);
+  assert(o_pkt.is_instr);
+  assert(o_pkt.type == LOAD);
+  assert(succ);
+  lower_level->add_rq(o_pkt);
+  return;
+}
+
 bool CACHE::handle_fill(const PACKET& fill_mshr)
 {
   cpu = fill_mshr.cpu;
-
+  
   // find victim
   auto [set_begin, set_end] = get_set_span(fill_mshr.address);
   auto way = std::find_if_not(set_begin, set_end, [](auto x) { return x.valid; });
@@ -162,7 +174,7 @@ bool CACHE::try_hit(const PACKET& handle_pkt)
   } else {
     ++sim_stats.misses[handle_pkt.type][handle_pkt.cpu];
   }
-
+ 
   return hit;
 }
 
@@ -279,6 +291,30 @@ void CACHE::operate()
   auto tag_bw = MAX_TAG;
   auto fill_bw = MAX_FILL;
 
+  #ifdef ORACLE_L1I
+  for(auto pkt : queues.RQ){  
+
+    if(queues.is_ready(pkt) && pkt.is_instr){
+      printf("addr %lx\n", pkt.address);
+      auto [set_begin, set_end] = get_set_span(pkt.address);
+      auto way = std::find_if(set_begin, set_end, eq_addr<BLOCK>(pkt.address, OFFSET_BITS));
+      auto hit = (way != set_end);
+      printf("Hit before %d\n", hit);
+
+      if(!hit || pkt.is_oracle)
+        oracle_fill(pkt);
+      
+      printf("Hit after %d\n", hit);
+      auto [set_begin1, set_end1] = get_set_span(pkt.address);
+      way = std::find_if(set_begin1, set_end1, eq_addr<BLOCK>(pkt.address, OFFSET_BITS));
+      hit = (way != set_end1);
+
+      printf("Hit after %d %lx\n", hit, pkt.address);
+      assert(hit);
+    } 
+  } 
+  #endif
+
   auto do_fill = [cycle = current_cycle, this](const auto& x) {
     return x.event_cycle <= cycle && this->handle_fill(x);
   };
@@ -358,7 +394,6 @@ bool CACHE::add_rq(const PACKET& packet)
     std::cout << " full_addr: " << packet.address << " v_address: " << packet.v_address << std::dec << " type: " << +packet.type
               << " occupancy: " << std::size(queues.RQ) << " current_cycle: " << current_cycle << std::endl;
   }
-
   return queues.add_rq(packet);
 }
 

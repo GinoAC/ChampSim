@@ -28,6 +28,8 @@
 #include "memory_class.h"
 #include "operable.h"
 
+//#define ORACLE_L1I
+
 struct cache_stats {
   std::string name;
   // prefetch stats
@@ -172,6 +174,9 @@ public:
   NonTranslatingQueues& queues;
   std::deque<PACKET> MSHR;
   std::deque<PACKET> inflight_writes;
+
+  //Oracle functions
+  void oracle_fill(PACKET& packet);
 
   // functions
   bool add_rq(const PACKET& packet) override final;

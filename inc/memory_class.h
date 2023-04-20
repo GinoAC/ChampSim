@@ -47,6 +47,9 @@ public:
   bool prefetch_from_this = false;
   bool fill_this_level = false;
   bool is_translated = true;
+  
+  bool is_instr = false;
+  bool is_oracle = false;
 
   uint8_t asid[2] = {std::numeric_limits<uint8_t>::max(), std::numeric_limits<uint8_t>::max()}, type = 0;
 

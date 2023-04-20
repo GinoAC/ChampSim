@@ -21,13 +21,13 @@
             "lq_width": 2,
             "sq_width": 2,
             "retire_width": 5,
-            "mispredict_penalty": 1,
+            "mispredict_penalty": 2,
             "scheduler_size": 128,
             "decode_latency": 1,
             "dispatch_latency": 1,
-            "schedule_latency": 0,
-            "execute_latency": 0,
-            "branch_predictor": "bimodal",
+            "schedule_latency": 2,
+            "execute_latency": 2,
+            "branch_predictor": "hashed_perceptron",
             "btb": "basic_btb"
         }
     ],

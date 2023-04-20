@@ -52,6 +52,13 @@ void MEMORY_CONTROLLER::operate()
         entry = {};
     }
 
+    #ifdef ORACLE_L1I
+    for(auto& entry : channel.RQ){
+      if(entry.is_oracle)
+        entry = {}
+    }
+    #endif
+
     // Check for forwarding
     channel.check_collision();
 

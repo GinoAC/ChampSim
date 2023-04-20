@@ -32,6 +32,8 @@
 #include "operable.h"
 #include "util.h"
 
+//#define FETCH_DECODES
+
 enum STATUS { INFLIGHT = 1, COMPLETED = 2 };
 
 class CacheBus : public MemoryRequestProducer
@@ -138,6 +140,9 @@ public:
   void operate() override final;
   void begin_phase() override final;
   void end_phase(unsigned cpu) override final;
+  
+  void dispatch_ii_fetch(); 
+  void bypass_to_decode();
 
   void initialize_instruction();
   void check_dib();
